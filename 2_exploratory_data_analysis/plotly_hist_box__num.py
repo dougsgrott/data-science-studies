@@ -50,7 +50,7 @@ def plotly_histogram_plus_boxplot(df: pd.DataFrame, columns: list, max_outliers:
         is_visible = (col_name == columns[0])
         col_data = df[col_name].dropna()
 
-        # --- 1. OPTIMIZATION: Pre-aggregate histogram data ---
+        # --- Pre-aggregate histogram data ---
         counts, bin_edges = np.histogram(col_data, bins='auto')
         fig.add_trace(
             go.Bar(
@@ -64,7 +64,7 @@ def plotly_histogram_plus_boxplot(df: pd.DataFrame, columns: list, max_outliers:
             row=1, col=1
         )
         
-        # --- 2. OPTIMIZATION: Manually calculate Boxplot and sample outliers ---
+        # --- Manually calculate Boxplot and sample outliers ---
         q1 = col_data.quantile(0.25)
         median = col_data.median()
         q3 = col_data.quantile(0.75)
@@ -73,17 +73,16 @@ def plotly_histogram_plus_boxplot(df: pd.DataFrame, columns: list, max_outliers:
         upper_fence = q3 + 1.5 * iqr
 
         # Add the main boxplot trace using calculated values
-        # We assign it to a specific numerical y-value to ensure alignment
         fig.add_trace(
             go.Box(
                 q1=[q1], median=[median], q3=[q3],
                 lowerfence=[lower_fence], upperfence=[upper_fence],
                 name='Boxplot',
-                boxpoints=False, # We plot outliers manually
-                orientation='h', # Set orientation to horizontal
+                boxpoints=False,
+                orientation='h',
                 visible=is_visible,
                 marker_color=base_color,
-                y=[0] # Assign to a specific numerical "lane"
+                y=[0]
             ), 
             row=2, col=1
         )
@@ -91,36 +90,33 @@ def plotly_histogram_plus_boxplot(df: pd.DataFrame, columns: list, max_outliers:
         # Identify, sample, and plot the outliers
         outliers = col_data[(col_data < lower_fence) | (col_data > upper_fence)]
         sampled_outliers = sample_outliers(outliers, max_outliers)
-        
-        # Plot outliers horizontally in the same numerical "lane" as the boxplot
         fig.add_trace(
             go.Scatter(
                 x=sampled_outliers,
-                y=[0] * len(sampled_outliers), # Use the same numerical "lane"
+                y=[0] * len(sampled_outliers),
                 mode='markers',
                 name='Outliers',
-                # marker=dict(color='rgba(0, 0, 0, 0.3)', size=5),
                 marker=dict(color=outlier_color, size=5),
                 visible=is_visible
             ),
             row=2, col=1
         )
 
-    # --- Create the dropdown menu (CORRECTED LOGIC) ---
+    # --- Create the dropdown menu ---
     buttons = []
     for i, col_name in enumerate(columns):
         # Each column now has 3 traces: histogram, box, and outliers
-        visibility_mask = [False] * (len(columns) * 3) # Correct total length
-        visibility_mask[i*3] = True      # Show histogram
-        visibility_mask[i*3 + 1] = True  # Show boxplot
-        visibility_mask[i*3 + 2] = True  # Show outliers
+        visibility_mask = [False] * (len(columns) * 3)
+        visibility_mask[i*3] = True
+        visibility_mask[i*3 + 1] = True
+        visibility_mask[i*3 + 2] = True
         
         button = dict(
             label=col_name,
             method="update",
             args=[
                 {"visible": visibility_mask},
-                {"title": f"<b>Distribution of {col_name}</b>"}
+                {"title.text": f"<b>Distribution of {col_name}</b>"}
             ]
         )
         buttons.append(button)
@@ -194,7 +190,7 @@ if __name__=='__main__':
         large_categorical_features = [c for c in df.columns if c.endswith('_large')]
 
         fig_hist_box = plotly_histogram_plus_boxplot(df, numerical_features)
-        # pio.write_html(fig_hist_box, file=f'fig_hist_box__{n_samples}.html', auto_open=False)
+        pio.write_html(fig_hist_box, file=f'fig_hist_box__{n_samples}.html', auto_open=False)
         # fig_bar_box.show()
 
 # %%
