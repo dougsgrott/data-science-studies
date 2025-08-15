@@ -1,12 +1,9 @@
-# %%
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import numpy as np
 from math import ceil
-from typing import List, Dict, Tuple, Any
-import plotly.io as pio
+from typing import List
 
 
 def sample_outliers(data: pd.Series, max_samples: int):
@@ -18,7 +15,7 @@ def sample_outliers(data: pd.Series, max_samples: int):
     return data.sample(n=max_samples, random_state=42)
 
 
-def plotly_bar_box_features_optimized(data: pd.DataFrame, 
+def plotly_bar_box_grid(data: pd.DataFrame, 
                                       categorical_columns: list, 
                                       numerical_columns: list, 
                                       max_outliers: int = 500):
@@ -137,9 +134,7 @@ def plotly_bar_box_features_optimized(data: pd.DataFrame,
     return fig
 
 
-
-
-def plotly_bar_box_features_double_dropdown_optimized(data: pd.DataFrame, 
+def plotly_bar_box_dropdown(data: pd.DataFrame, 
                                                       categorical_columns: List[str], 
                                                       numerical_columns: List[str],
                                                       max_outliers: int = 200) -> go.Figure:
@@ -284,64 +279,3 @@ def plotly_bar_box_features_double_dropdown_optimized(data: pd.DataFrame,
     )
 
     return fig
-
-
-
-
-if __name__=='__main__':
-    from sklearn.datasets import make_classification
-    import random
-
-
-    # --- Dataset Configuration ---
-    # n_samples = 100
-    for n_samples in [100, 1000, 10000]:#, 100000]:
-        n_small_categorical_features = 5
-        n_large_categorical_features = 5
-        n_numerical_features = 3+24
-
-        n_categorical_features = n_small_categorical_features + n_large_categorical_features
-        n_features = n_numerical_features + n_categorical_features
-
-
-        # --- Dataset Creation ---
-        X, y = make_classification(n_samples=n_samples, n_features=n_features, random_state=42)
-        y = y.reshape(-1, 1)
-        df = pd.DataFrame(np.concatenate([X, y], axis=1))
-
-
-        # --- Dataset Processing ---
-        numerical_columns = [f'num_feature_{i}' for i in range(n_numerical_features)]
-        categorical_columns = [f'cat_feature_{i}' for i in range(n_categorical_features)]
-        df.columns = numerical_columns + categorical_columns + ['target']
-
-        # --- Small Categorical Features ---
-        for i in range(n_small_categorical_features):
-            col = numerical_columns[i % n_numerical_features]
-            n_bins = random.randint(2, 5)
-            df[f'cat_feature_{i}_small'] = pd.cut(df[col], bins=n_bins, labels=[f'Small_{j}' for j in range(1, n_bins + 1)])
-
-        # --- Large Categorical Features ---
-        for i in range(n_small_categorical_features, n_small_categorical_features + n_large_categorical_features):
-            col = numerical_columns[i % n_numerical_features]
-            n_bins = random.randint(20, 50)
-            df[f'cat_feature_{i}_large'] = pd.cut(df[col], bins=n_bins, labels=[f'Large_{j}' for j in range(1, n_bins + 1)])
-
-        numerical_features = [c for c in df.columns if c.startswith('num')]
-        small_categorical_features = [c for c in df.columns if c.endswith('_small')]
-        large_categorical_features = [c for c in df.columns if c.endswith('_large')]
-
-        # categories = pd.cut(data, bins=5, labels=["Low", "Medium-Low", "Medium", "Medium-High", "High"])
-
-        # fig_bar_box = plotly_bar_box_features_optimized(df, small_categorical_features, numerical_features)
-
-
-        fig_bar_box = plotly_bar_box_features_optimized(df, small_categorical_features, numerical_features)
-        pio.write_html(fig_bar_box, file=f'fig_bar_box_1__{n_samples}.html', auto_open=False, include_plotlyjs=True)
-
-        fig_bar_box = plotly_bar_box_features_double_dropdown_optimized(df, small_categorical_features, numerical_features)
-        pio.write_html(fig_bar_box, file=f'fig_bar_box_2__{n_samples}.html', auto_open=False, include_plotlyjs=True)
-        
-        # fig_bar_box.to_html('n_samples.html')
-
-    # fig_bar_box.show()

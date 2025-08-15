@@ -1,11 +1,8 @@
-# %%
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import plotly.figure_factory as ff
-import plotly.io as pio
 from itertools import product
 
 
@@ -18,7 +15,7 @@ def sample_outliers(data: pd.Series, max_samples: int):
     return data.sample(n=max_samples, random_state=42)
 
 
-def plotly_histogram_plus_boxplot(df: pd.DataFrame, 
+def plotly_hist_box_dropdown(df: pd.DataFrame, 
                                      numerical_columns: list, 
                                      categorical_columns: list = None, 
                                      max_outliers: int = 500):
@@ -146,55 +143,3 @@ def plotly_histogram_plus_boxplot(df: pd.DataFrame,
     fig.update_yaxes(showticklabels=True, row=2, col=1)
 
     return fig
-
-
-if __name__=='__main__':
-    from sklearn.datasets import make_classification
-    import random
-
-    # --- Dataset Configuration ---
-    n_samples_list = [10, 100, 1000, 10000, 100000]
-    for n_samples in n_samples_list:
-        n_small_categorical_features = 5
-        n_large_categorical_features = 5
-        n_numerical_features = 3#+30
-
-        n_categorical_features = n_small_categorical_features + n_large_categorical_features
-        n_features = n_numerical_features + n_categorical_features
-
-
-        # --- Dataset Creation ---
-        X, y = make_classification(n_samples=n_samples, n_features=n_features, random_state=42)
-        y = y.reshape(-1, 1)
-        df = pd.DataFrame(np.concatenate([X, y], axis=1))
-
-        # --- Dataset Processing ---
-        numerical_columns = [f'num_feature_{i}' for i in range(n_numerical_features)]
-        categorical_columns = [f'cat_feature_{i}' for i in range(n_categorical_features)]
-        df.columns = numerical_columns + categorical_columns + ['target']
-
-        # --- Small Categorical Features ---
-        for i in range(n_small_categorical_features):
-            col = numerical_columns[i % n_numerical_features]
-            n_bins = random.randint(2, 5)
-            df[f'cat_feature_{i}_small'] = pd.cut(df[col], bins=n_bins, labels=[f'Small_{j}' for j in range(1, n_bins + 1)])
-
-        # --- Large Categorical Features ---
-        for i in range(n_small_categorical_features, n_small_categorical_features + n_large_categorical_features):
-            col = numerical_columns[i % n_numerical_features]
-            n_bins = random.randint(20, 50)
-            df[f'cat_feature_{i}_large'] = pd.cut(df[col], bins=n_bins, labels=[f'Large_{j}' for j in range(1, n_bins + 1)])
-
-        numerical_features = [c for c in df.columns if c.startswith('num')]
-        small_categorical_features = [c for c in df.columns if c.endswith('_small')]
-        large_categorical_features = [c for c in df.columns if c.endswith('_large')]
-
-        fig_hist_box = plotly_histogram_plus_boxplot(df, numerical_features)
-        pio.write_html(fig_hist_box, file=f'fig_hist_box___num_{n_samples}.html', auto_open=False)
-
-        fig_hist_box = plotly_histogram_plus_boxplot(df, numerical_features, small_categorical_features)
-        pio.write_html(fig_hist_box, file=f'fig_hist_box__numcat_{n_samples}.html', auto_open=False)
-
-        # fig_bar_box.show()
-
-# %%
